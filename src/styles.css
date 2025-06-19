@@ -1,0 +1,195 @@
+:root {
+  --primary: #688990;
+  --primary-hover: #4D766E;
+  --bg: #FAFBFD;
+  --border: #B6C2CE;
+  --text: #01070A;
+  --muted: #4D766E;
+  --radius: 10px;
+  --font-lg: 17px;
+  --white: #B6C2CE;
+  --shadow: #01070A;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+}
+
+#root {
+  width: 100%;
+  max-width: 1240px;
+  padding: 40px 24px;
+}
+
+h1 {
+  font-size: 32px;
+  font-weight: 900;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+button {
+  background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+  margin-bottom: 24px;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(99, 102, 241, 0.6);
+}
+
+input {
+  padding: 12px;
+  margin-bottom: 16px;
+  width: 100%;
+  font-size: var(--font-lg);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  box-sizing: border-box;
+}
+
+input:focus {
+  border-color: var(--primary);
+  outline: none;
+}
+
+#modal {
+  background-color: var(--white);
+  padding: 24px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  margin-top: 20px;
+  box-shadow: 0 6px 24px var(--shadow);
+}
+
+table {
+  width: 100%;
+  background-color: var(--white);
+  border-collapse: collapse;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  font-size: var(--font-lg);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  margin-top: 24px;
+}
+
+th, td {
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  text-align: center;
+}
+
+th {
+  background-color: #e0e7ff;
+  color: #374151;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 14px;
+}
+
+tr {
+  background-color: #f1f5ff;
+}
+
+a {
+  color: var(--primary);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+.fade-out {
+  opacity: 0;
+  transform: scale(0.98);
+  transition: all 0.3s ease;
+}
+
+/* ===== Паспорт засобу ===== */
+
+.passport-container {
+  display: flex;
+  gap: 24px;
+  margin-top: 32px;
+}
+
+.passport-left {
+  width: 25%;
+}
+
+.passport-right {
+  width: 75%;
+}
+
+.asset-avatar {
+  width: 100%;
+  border-radius: var(--radius);
+  margin-top: 16px;
+  object-fit: cover;
+}
+
+/* ===== Документи ===== */
+
+.document-blocks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+  position: relative;
+}
+
+.document-block {
+  border: 2px solid var(--border);
+  padding: 12px;
+  border-radius: var(--radius);
+  width: calc(50% - 12px);
+  background: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+}
+
+.add-document {
+  padding: 12px 16px;
+  font-size: 20px;
+  border-radius: var(--radius);
+  background: var(--muted);
+  color: white;
+  border: none;
+  cursor: pointer;
+  height: fit-content;
+}
+
+.document-number {
+  font-weight: bold;
+  font-size: 18px;
+  color: var(--primary);
+  margin-bottom: 8px;
+}
+
+.document-arrow {
+  font-size: 24px;
+  color: var(--primary-hover);
+  text-align: center;
+  margin-top: 8px;
+}
