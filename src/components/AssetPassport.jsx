@@ -1,6 +1,8 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 
+const API_BASE = "https://reb-backend.onrender.com"; // Заміни на свій реальний URL
+
 export default function AssetPassport() {
   const { id } = useParams();
   const [asset, setAsset] = useState(null);
@@ -10,10 +12,12 @@ export default function AssetPassport() {
   const [previewUrl, setPreviewUrl] = useState(null);
 
   useEffect(() => {
-    const localData = JSON.parse(localStorage.getItem("assets")) || [];
-    const found = localData.find((a) => a.id === Number(id));
-    setAsset(found);
-    if (found?.unit) setLocation(found.unit);
+    fetch(`${API_BASE}/assets/${id}`)
+      .then(res => res.json())
+      .then(data => {
+        setAsset(data);
+        if (data?.unit) setLocation(data.unit);
+      });
   }, [id]);
 
   const handleDocumentChange = (index, field, value) => {
@@ -50,6 +54,27 @@ export default function AssetPassport() {
 
   const closePreview = () => setPreviewUrl(null);
 
+  const uploadDocument = async (index) => {
+    const doc = documents[index];
+    const formData = new FormData();
+    formData.append("number", doc.number);
+    formData.append("date", doc.date);
+    if (doc.docFile) formData.append("docFile", doc.docFile);
+    if (doc.scanFile) formData.append("scanFile", doc.scanFile);
+
+    const res = await fetch(`${API_BASE}/assets/${id}/documents`, {
+      method: "POST",
+      body: formData
+    });
+
+    if (res.ok) {
+      const result = await res.json();
+      console.log("Збережено документ:", result);
+    } else {
+      console.error("Помилка збереження");
+    }
+  };
+
   return (
     <div className="passport-container">
       <div className="passport-left">
@@ -85,7 +110,7 @@ export default function AssetPassport() {
                 value={doc.date}
                 onChange={(e) => handleDocumentChange(index, 'date', e.target.value)}
               />
-              <label>Документ Word/PDF:</label>
+              <label>Документ (Word/PDF):</label>
               {!doc.docFile && (
                 <input
                   type="file"
@@ -98,7 +123,6 @@ export default function AssetPassport() {
                   📄 Перегляд
                 </button>
               )}
-              <br/>
               <label>Скан документа (зображення):</label>
               {!doc.scanFile && (
                 <input
@@ -112,6 +136,7 @@ export default function AssetPassport() {
                   🖼️ Перегляд
                 </button>
               )}
+              <button className="add-document" onClick={() => uploadDocument(index)}>💾 Зберегти документ</button>
               {index < documents.length - 1 && <div className="document-arrow">→</div>}
             </div>
           ))}
