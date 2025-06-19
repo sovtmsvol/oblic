@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
-let idCounter = 1;
+const API_BASE = "https://reb-backend.onrender.com";
 
 export default function AssetTracker() {
   const [assets, setAssets] = useState([]);
@@ -10,16 +10,30 @@ export default function AssetTracker() {
     serial: "",
     nomenclature: "",
     unit: "",
+    location: ""
   });
 
-  const handleAddAsset = () => {
-    const newAsset = {
-      id: idCounter++,
-      ...form,
-    };
-    setAssets([...assets, newAsset]);
-    setForm({ name: "", serial: "", nomenclature: "", unit: "" });
-    document.getElementById('modal').style.display = 'none';
+  useEffect(() => {
+    fetch(`${API_BASE}/assets`)
+      .then(res => res.json())
+      .then(setAssets);
+  }, []);
+
+  const handleAddAsset = async () => {
+    const formData = new FormData();
+    Object.entries(form).forEach(([key, value]) => formData.append(key, value));
+
+    const res = await fetch(`${API_BASE}/assets`, {
+      method: "POST",
+      body: formData
+    });
+
+    if (res.ok) {
+      const newAsset = await res.json();
+      setAssets([...assets, newAsset]);
+      setForm({ name: "", serial: "", nomenclature: "", unit: "", location: "" });
+      document.getElementById('modal').style.display = 'none';
+    }
   };
 
   const closeModal = () => {
@@ -55,6 +69,11 @@ export default function AssetTracker() {
           value={form.unit}
           onChange={(e) => setForm({ ...form, unit: e.target.value })}
         />
+        <input
+          placeholder="Місцезнаходження"
+          value={form.location}
+          onChange={(e) => setForm({ ...form, location: e.target.value })}
+        />
         <div style={{ display: 'flex', gap: '10px' }}>
           <button onClick={handleAddAsset}>Зберегти</button>
           <button onClick={closeModal}>Відхилити</button>
@@ -73,10 +92,10 @@ export default function AssetTracker() {
         </thead>
         <tbody>
           {assets.map((a, index) => (
-            <tr key={a.id} id={`row-${a.id}`}>
+            <tr key={a._id} id={`row-${a._id}`}>
               <td>{index + 1}</td>
               <td>
-                <Link to={`/passport/${a.id}`}>{a.name}</Link>
+                <Link to={`/passport/${a._id}`}>{a.name}</Link>
               </td>
               <td>{a.serial}</td>
               <td>{a.nomenclature}</td>

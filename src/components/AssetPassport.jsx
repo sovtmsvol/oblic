@@ -1,14 +1,13 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 
-const API_BASE = "https://reb-backend.onrender.com"; // Заміни на свій реальний URL
+const API_BASE = "https://reb-backend.onrender.com";
 
 export default function AssetPassport() {
   const { id } = useParams();
   const [asset, setAsset] = useState(null);
-  const [photo, setPhoto] = useState(null);
-  const [documents, setDocuments] = useState([{ number: '', date: '', docFile: null, scanFile: null }]);
-  const [location, setLocation] = useState('');
+  const [documents, setDocuments] = useState([]);
+  const [newDoc, setNewDoc] = useState({ number: '', date: '', docFile: null, scanFile: null });
   const [previewUrl, setPreviewUrl] = useState(null);
 
   useEffect(() => {
@@ -16,51 +15,20 @@ export default function AssetPassport() {
       .then(res => res.json())
       .then(data => {
         setAsset(data);
-        if (data?.unit) setLocation(data.unit);
+        setDocuments(data.documents || []);
       });
   }, [id]);
 
-  const handleDocumentChange = (index, field, value) => {
-    const newDocs = [...documents];
-    newDocs[index][field] = value;
-    setDocuments(newDocs);
+  const handleDocChange = (field, value) => {
+    setNewDoc({ ...newDoc, [field]: value });
   };
 
-  const addDocumentBlock = () => {
-    setDocuments([...documents, { number: '', date: '', docFile: null, scanFile: null }]);
-  };
-
-  const removeDocumentBlock = (index) => {
-    const updated = [...documents];
-    updated.splice(index, 1);
-    setDocuments(updated);
-  };
-
-  const handlePhotoChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => setPhoto(reader.result);
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handlePreview = (file) => {
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setPreviewUrl(url);
-    }
-  };
-
-  const closePreview = () => setPreviewUrl(null);
-
-  const uploadDocument = async (index) => {
-    const doc = documents[index];
+  const uploadDocument = async () => {
     const formData = new FormData();
-    formData.append("number", doc.number);
-    formData.append("date", doc.date);
-    if (doc.docFile) formData.append("docFile", doc.docFile);
-    if (doc.scanFile) formData.append("scanFile", doc.scanFile);
+    formData.append("number", newDoc.number);
+    formData.append("date", newDoc.date);
+    if (newDoc.docFile) formData.append("docFile", newDoc.docFile);
+    if (newDoc.scanFile) formData.append("scanFile", newDoc.scanFile);
 
     const res = await fetch(`${API_BASE}/assets/${id}/documents`, {
       method: "POST",
@@ -68,87 +36,58 @@ export default function AssetPassport() {
     });
 
     if (res.ok) {
-      const result = await res.json();
-      console.log("Збережено документ:", result);
-    } else {
-      console.error("Помилка збереження");
+      const updated = await fetch(`${API_BASE}/assets/${id}`).then(res => res.json());
+      setAsset(updated);
+      setDocuments(updated.documents);
+      setNewDoc({ number: '', date: '', docFile: null, scanFile: null });
     }
+  };
+
+  const handlePreview = (file) => {
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
   };
 
   return (
     <div className="passport-container">
-      <div className="passport-left">
-        <label>Фото засобу:</label>
-        <input type="file" accept="image/*" onChange={handlePhotoChange} />
-        {photo && <img src={photo} alt="Asset" className="asset-avatar" />}
-        {asset && <h2>{asset.name}</h2>}
+      {asset && (
+        <>
+          <div className="passport-left">
+            {asset.photo && <img src={asset.photo} alt="Фото" className="asset-avatar" />}
+            <h2>{asset.name}</h2>
+            <p><b>Підрозділ:</b> {asset.unit}</p>
+          </div>
 
-        <label>Актуальне місцезнаходження:</label>
-        <input
-          type="text"
-          placeholder="Введіть підрозділ"
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-        />
-      </div>
-
-      <div className="passport-right">
-        <h3>Порядок перебування засобу в бригаді</h3>
-        <div className="document-blocks">
-          {documents.map((doc, index) => (
-            <div key={index} className="document-block">
-              <button className="close-doc" onClick={() => removeDocumentBlock(index)}>×</button>
-              <div className="document-number">{index + 1}</div>
-              <input
-                type="text"
-                placeholder="Номер документа"
-                value={doc.number}
-                onChange={(e) => handleDocumentChange(index, 'number', e.target.value)}
-              />
-              <input
-                type="date"
-                value={doc.date}
-                onChange={(e) => handleDocumentChange(index, 'date', e.target.value)}
-              />
-              <label>Документ (Word/PDF):</label>
-              {!doc.docFile && (
-                <input
-                  type="file"
-                  accept=".doc,.docx,.pdf"
-                  onChange={(e) => handleDocumentChange(index, 'docFile', e.target.files[0])}
-                />
-              )}
-              {doc.docFile && (
-                <button type="button" className="view-icon" onClick={() => handlePreview(doc.docFile)}>
-                  📄 Перегляд
-                </button>
-              )}
-              <label>Скан документа (зображення):</label>
-              {!doc.scanFile && (
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleDocumentChange(index, 'scanFile', e.target.files[0])}
-                />
-              )}
-              {doc.scanFile && (
-                <button type="button" className="view-icon" onClick={() => handlePreview(doc.scanFile)}>
-                  🖼️ Перегляд
-                </button>
-              )}
-              <button className="add-document" onClick={() => uploadDocument(index)}>💾 Зберегти документ</button>
-              {index < documents.length - 1 && <div className="document-arrow">→</div>}
+          <div className="passport-right">
+            <h3>Документи:</h3>
+            <div className="document-blocks">
+              {documents.map((doc, i) => (
+                <div className="document-block" key={i}>
+                  <div className="document-number">{i + 1}. {doc.number}</div>
+                  <div>{doc.date}</div>
+                  {doc.docFile && <button onClick={() => window.open(doc.docFile)}>📄</button>}
+                  {doc.scanFile && <button onClick={() => window.open(doc.scanFile)}>🖼️</button>}
+                </div>
+              ))}
+              <div className="document-block">
+                <input type="text" placeholder="Номер документа" value={newDoc.number} onChange={e => handleDocChange('number', e.target.value)} />
+                <input type="date" value={newDoc.date} onChange={e => handleDocChange('date', e.target.value)} />
+                <label>Док:</label>
+                <input type="file" onChange={e => handleDocChange('docFile', e.target.files[0])} />
+                <label>Скан:</label>
+                <input type="file" onChange={e => handleDocChange('scanFile', e.target.files[0])} />
+                <button onClick={uploadDocument}>💾 Зберегти</button>
+              </div>
             </div>
-          ))}
-          <button className="add-document" onClick={addDocumentBlock}>+</button>
-        </div>
-      </div>
+          </div>
+        </>
+      )}
 
       {previewUrl && (
-        <div className="preview-overlay" onClick={closePreview}>
+        <div className="preview-overlay" onClick={() => setPreviewUrl(null)}>
           <div className="preview-modal">
-            <iframe src={previewUrl} title="Документ" frameBorder="0" width="100%" height="100%"></iframe>
-            <button className="close-preview" onClick={closePreview}>×</button>
+            <iframe src={previewUrl} title="Документ" width="100%" height="100%"></iframe>
+            <button className="close-preview">×</button>
           </div>
         </div>
       )}
