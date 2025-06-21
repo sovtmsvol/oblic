@@ -16,29 +16,34 @@ export default function AssetTracker() {
   useEffect(() => {
     fetch(`${API_BASE}/assets`)
       .then(res => res.json())
-      .then(setAssets);
+      .then(setAssets)
+      .catch(console.error);
   }, []);
 
   const handleAddAsset = async () => {
     const formData = new FormData();
-    Object.entries(form).forEach(([key, value]) => formData.append(key, value));
+    Object.entries(form).forEach(([k, v]) => formData.append(k, v));
 
-    const res = await fetch(`${API_BASE}/assets`, {
-      method: "POST",
-      body: formData
-    });
-
-    if (res.ok) {
-      const newAsset = await res.json();
-      setAssets([...assets, newAsset]);
-      setForm({ name: "", serial: "", nomenclature: "", unit: "", location: "" });
-      document.getElementById('modal').style.display = 'none';
+    try {
+      const res = await fetch(`${API_BASE}/assets`, {
+        method: "POST",
+        body: formData
+      });
+      const data = await res.json();
+      if (res.ok && data._id) {
+        setAssets(prev => [...prev, data]);
+        setForm({ name: "", serial: "", nomenclature: "", unit: "", location: "" });
+        document.getElementById("modal").style.display = "none";
+      } else {
+        alert("Помилка при збереженні");
+        console.error(data);
+      }
+    } catch (e) {
+      console.error("Network error", e);
     }
   };
 
-  const closeModal = () => {
-    document.getElementById('modal').style.display = 'none';
-  };
+  const closeModal = () => document.getElementById('modal').style.display = 'none';
 
   return (
     <div>
@@ -49,31 +54,9 @@ export default function AssetTracker() {
       </button>
 
       <div id="modal" style={{ display: 'none' }}>
-        <input
-          placeholder="Найменування"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-        />
-        <input
-          placeholder="Заводський номер"
-          value={form.serial}
-          onChange={(e) => setForm({ ...form, serial: e.target.value })}
-        />
-        <input
-          placeholder="Номенклатура"
-          value={form.nomenclature}
-          onChange={(e) => setForm({ ...form, nomenclature: e.target.value })}
-        />
-        <input
-          placeholder="Підрозділ"
-          value={form.unit}
-          onChange={(e) => setForm({ ...form, unit: e.target.value })}
-        />
-        <input
-          placeholder="Місцезнаходження"
-          value={form.location}
-          onChange={(e) => setForm({ ...form, location: e.target.value })}
-        />
+        {["name", "serial", "nomenclature", "unit", "location"].map(f => (
+          <input key={f} placeholder={f} value={form[f]} onChange={e => setForm({ ...form, [f]: e.target.value })} />
+        ))}
         <div style={{ display: 'flex', gap: '10px' }}>
           <button onClick={handleAddAsset}>Зберегти</button>
           <button onClick={closeModal}>Відхилити</button>
@@ -82,21 +65,13 @@ export default function AssetTracker() {
 
       <table>
         <thead>
-          <tr>
-            <th>№</th>
-            <th>Найменування</th>
-            <th>Заводський номер</th>
-            <th>Номенклатура</th>
-            <th>Підрозділ</th>
-          </tr>
+          <tr><th>№</th><th>Найменування</th><th>Заводський номер</th><th>Номенклатура</th><th>Підрозділ</th></tr>
         </thead>
         <tbody>
-          {assets.map((a, index) => (
-            <tr key={a._id} id={`row-${a._id}`}>
-              <td>{index + 1}</td>
-              <td>
-                <Link to={`/passport/${a._id}`}>{a.name}</Link>
-              </td>
+          {assets.map((a, i) => (
+            <tr key={a._id}>
+              <td>{i + 1}</td>
+              <td><Link to={`/passport/${a._id}`}>{a.name}</Link></td>
               <td>{a.serial}</td>
               <td>{a.nomenclature}</td>
               <td>{a.unit}</td>
