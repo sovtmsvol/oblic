@@ -28,33 +28,39 @@ useEffect(() => {
       alert("Помилка з'єднання із сервером.");
     });
 }, []);
+const handleAddAsset = async () => {
+  const formData = new FormData();
+  Object.entries(form).forEach(([key, value]) => formData.append(key, value));
 
-  const handleAddAsset = async () => {
-    const formData = new FormData();
-    Object.entries(form).forEach(([key, value]) => formData.append(key, value));
+  try {
+    const res = await fetch(`${API_BASE}/assets`, {
+      method: "POST",
+      body: formData,
+    });
 
-    try {
-      const res = await fetch(`${API_BASE}/assets`, {
-        method: "POST",
-        body: formData
-      });
+    const data = await res.json();
 
-      if (!res.ok) {
-        const errText = await res.text();
-        console.error("❌ Server error:", res.status, errText);
-        alert("Не вдалося зберегти засіб. Перевірте поля.");
-        return;
-      }
-
-      const newAsset = await res.json();
-      setAssets(prev => [...prev, newAsset]);
-      setForm({ name: "", serial: "", nomenclature: "", unit: "", location: "" });
-      document.getElementById('modal').style.display = 'none';
-    } catch (err) {
-      console.error("❌ Network error:", err);
-      alert("Сталася помилка при збереженні. Спробуйте ще раз.");
+    if (!res.ok) {
+      console.error("❌ Server responded with error:", data);
+      alert("Помилка збереження: " + (data.details || data.error));
+      return;
     }
-  };
+
+    if (!data || !data._id) {
+      console.error("❌ Unexpected response:", data);
+      alert("Сервер не повернув правильні дані.");
+      return;
+    }
+
+    setAssets(prev => [...prev, data]);
+    setForm({ name: "", serial: "", nomenclature: "", unit: "", location: "" });
+    document.getElementById('modal').style.display = 'none';
+  } catch (err) {
+    console.error("❌ Fetch error:", err);
+    alert("Не вдалося підключитися до сервера.");
+  }
+};
+
 
   const closeModal = () => {
     document.getElementById('modal').style.display = 'none';
