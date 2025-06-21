@@ -12,13 +12,22 @@ export default function AssetTracker() {
     unit: "",
     location: ""
   });
-
-  useEffect(() => {
-    fetch(`${API_BASE}/assets`)
-      .then(res => res.json())
-      .then(setAssets)
-      .catch(err => console.error("❌ Error fetching assets:", err));
-  }, []);
+useEffect(() => {
+  fetch(`${API_BASE}/assets`)
+    .then(res => res.json())
+    .then(data => {
+      if (Array.isArray(data)) {
+        setAssets(data);
+      } else {
+        console.error("❌ Неочікувана відповідь:", data);
+        alert("Помилка завантаження засобів. Перевір бекенд.");
+      }
+    })
+    .catch(err => {
+      console.error("❌ Запит не вдався:", err);
+      alert("Помилка з'єднання із сервером.");
+    });
+}, []);
 
   const handleAddAsset = async () => {
     const formData = new FormData();
