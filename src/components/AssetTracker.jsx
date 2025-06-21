@@ -90,15 +90,21 @@ export default function AssetTracker() {
           <tr><th>№</th><th>Найменування</th><th>Серійний</th><th>Номенклатура</th><th>Підрозділ</th></tr>
         </thead>
         <tbody>
-          {assets.map((a, i) => (
-            <tr key={a._id}>
-              <td>{i + 1}</td>
-              <td><Link to={`/passport/${a._id}`}>{a.name}</Link></td>
-              <td>{a.serial}</td>
-              <td>{a.nomenclature}</td>
-              <td>{a.unit}</td>
+          {Array.isArray(assets) ? (
+            assets.map((a, i) => (
+              <tr key={a._id}>
+                <td>{i + 1}</td>
+                <td><Link to={`/passport/${a._id}`}>{a.name}</Link></td>
+                <td>{a.serial}</td>
+                <td>{a.nomenclature}</td>
+                <td>{a.unit}</td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan="5" style={{ color: "red" }}>Помилка: assets не масив</td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
     </div>
