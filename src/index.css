@@ -82,3 +82,20 @@ code {
   justify-content: center;
   border: none;
 }
+
+.btn-back {
+  display: inline-block;
+  margin-bottom: 20px;
+  background-color: var(--primary-hover);
+  color: white;
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  font-weight: bold;
+  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transition: background 0.3s ease;
+}
+
+.btn-back:hover {
+  background-color: var(--primary);
+}
