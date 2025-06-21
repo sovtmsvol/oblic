@@ -19,15 +19,16 @@ useEffect(() => {
       if (Array.isArray(data)) {
         setAssets(data);
       } else {
-        console.error("❌ Неочікувана відповідь:", data);
-        alert("Помилка завантаження засобів. Перевір бекенд.");
+        console.error("❌ Очікував масив, отримав:", data);
+        alert("Помилка завантаження. Дані з сервера мають невірний формат.");
       }
     })
     .catch(err => {
-      console.error("❌ Запит не вдався:", err);
-      alert("Помилка з'єднання із сервером.");
+      console.error("❌ Помилка запиту:", err);
+      alert("Помилка звʼязку з сервером.");
     });
 }, []);
+
 const handleAddAsset = async () => {
   const formData = new FormData();
   Object.entries(form).forEach(([key, value]) => formData.append(key, value));
@@ -40,15 +41,9 @@ const handleAddAsset = async () => {
 
     const data = await res.json();
 
-    if (!res.ok) {
-      console.error("❌ Server responded with error:", data);
-      alert("Помилка збереження: " + (data.details || data.error));
-      return;
-    }
-
-    if (!data || !data._id) {
-      console.error("❌ Unexpected response:", data);
-      alert("Сервер не повернув правильні дані.");
+    if (!res.ok || !data || !data._id) {
+      console.error("❌ Невдала відповідь:", data);
+      alert("Не вдалося створити засіб: " + (data.details || data.error || "невідома помилка"));
       return;
     }
 
@@ -56,10 +51,11 @@ const handleAddAsset = async () => {
     setForm({ name: "", serial: "", nomenclature: "", unit: "", location: "" });
     document.getElementById('modal').style.display = 'none';
   } catch (err) {
-    console.error("❌ Fetch error:", err);
-    alert("Не вдалося підключитися до сервера.");
+    console.error("❌ Запит не виконано:", err);
+    alert("Помилка мережі.");
   }
 };
+
 
 
   const closeModal = () => {
