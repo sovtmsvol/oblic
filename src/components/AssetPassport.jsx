@@ -6,9 +6,9 @@ const API_BASE = "https://reb-backend.onrender.com";
 export default function AssetPassport() {
   const { id } = useParams();
   const [asset, setAsset] = useState(null);
-  const [documents, setDocuments] = useState([]);
+  const [photo, setPhoto] = useState(null);
+  const [documents, setDocuments] = useState([{ number: '', date: '', docFile: null, scanFile: null }]);
   const [location, setLocation] = useState('');
-  const [photoUrl, setPhotoUrl] = useState('');
   const [previewUrl, setPreviewUrl] = useState(null);
 
   useEffect(() => {
@@ -17,28 +17,25 @@ export default function AssetPassport() {
       .then(data => {
         setAsset(data);
         setLocation(data.location || '');
-        setPhotoUrl(data.photo || '');
-        setDocuments(data.documents || []);
+        setPhoto(data.photo || null);
+        setDocuments(data.documents || [{ number: '', date: '', docFile: null, scanFile: null }]);
       });
   }, [id]);
 
-  const updateAsset = async (updatedFields) => {
-    const res = await fetch(`${API_BASE}/assets/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updatedFields),
-    });
-
-    if (res.ok) {
-      const updated = await res.json();
-      setAsset(updated);
-    }
+  const handleDocumentChange = (index, field, value) => {
+    const newDocs = [...documents];
+    newDocs[index][field] = value;
+    setDocuments(newDocs);
   };
 
-  const handleLocationChange = (e) => {
-    const newLoc = e.target.value;
-    setLocation(newLoc);
-    updateAsset({ location: newLoc });
+  const addDocumentBlock = () => {
+    setDocuments([...documents, { number: '', date: '', docFile: null, scanFile: null }]);
+  };
+
+  const removeDocumentBlock = (index) => {
+    const updated = [...documents];
+    updated.splice(index, 1);
+    setDocuments(updated);
   };
 
   const handlePhotoChange = async (e) => {
@@ -55,8 +52,19 @@ export default function AssetPassport() {
 
     if (res.ok) {
       const updated = await res.json();
-      setPhotoUrl(updated.photo);
+      setPhoto(updated.photo);
     }
+  };
+
+  const handleLocationChange = async (e) => {
+    const loc = e.target.value;
+    setLocation(loc);
+
+    await fetch(`${API_BASE}/assets/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ location: loc }),
+    });
   };
 
   const handlePreview = (file) => {
@@ -76,7 +84,7 @@ export default function AssetPassport() {
         <div className="passport-left">
           <label>Фото засобу:</label>
           <input type="file" accept="image/*" onChange={handlePhotoChange} />
-          {photoUrl && <img src={photoUrl} alt="Asset" className="asset-avatar" />}
+          {photo && <img src={photo} alt="Asset" className="asset-avatar" />}
           {asset && <h2>{asset.name}</h2>}
 
           <label>Актуальне місцезнаходження:</label>
@@ -93,21 +101,49 @@ export default function AssetPassport() {
           <div className="document-blocks">
             {documents.map((doc, index) => (
               <div key={index} className="document-block">
+                <button className="close-doc" onClick={() => removeDocumentBlock(index)}>×</button>
                 <div className="document-number">{index + 1}</div>
-                <div><strong>№:</strong> {doc.number}</div>
-                <div><strong>Дата:</strong> {doc.date}</div>
+                <input
+                  type="text"
+                  placeholder="Номер документа"
+                  value={doc.number}
+                  onChange={(e) => handleDocumentChange(index, 'number', e.target.value)}
+                />
+                <input
+                  type="date"
+                  value={doc.date}
+                  onChange={(e) => handleDocumentChange(index, 'date', e.target.value)}
+                />
+                <label>Документ (Word/PDF):</label>
+                {!doc.docFile && (
+                  <input
+                    type="file"
+                    accept=".doc,.docx,.pdf"
+                    onChange={(e) => handleDocumentChange(index, 'docFile', e.target.files[0])}
+                  />
+                )}
                 {doc.docFile && (
                   <button type="button" className="view-icon" onClick={() => handlePreview(doc.docFile)}>
-                    📄 Перегляд документа
+                    📄 Перегляд
                   </button>
+                )}
+                <label>Скан документа (зображення):</label>
+                {!doc.scanFile && (
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleDocumentChange(index, 'scanFile', e.target.files[0])}
+                  />
                 )}
                 {doc.scanFile && (
                   <button type="button" className="view-icon" onClick={() => handlePreview(doc.scanFile)}>
-                    🖼️ Перегляд скану
+                    🖼️ Перегляд
                   </button>
                 )}
+                {index < documents.length - 1 && <div className="document-arrow">→</div>}
               </div>
             ))}
+            <button className="add-document" onClick={addDocumentBlock}>+</button>
           </div>
         </div>
 
