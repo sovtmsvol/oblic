@@ -7,6 +7,7 @@ export default function AssetPassport() {
   const { id } = useParams();
   const [asset, setAsset] = useState(null);
   const [photo, setPhoto] = useState(null);
+  const [photoFile, setPhotoFile] = useState(null);
   const [documents, setDocuments] = useState([{ number: '', date: '', docFile: null, scanFile: null }]);
   const [location, setLocation] = useState('');
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -38,33 +39,14 @@ export default function AssetPassport() {
     setDocuments(updated);
   };
 
-  const handlePhotoChange = async (e) => {
+  const handlePhotoChange = (e) => {
     const file = e.target.files[0];
-    if (!file) return;
-
-    const formData = new FormData();
-    formData.append("photo", file);
-
-    const res = await fetch(`${API_BASE}/assets/${id}`, {
-      method: "PATCH",
-      body: formData,
-    });
-
-    if (res.ok) {
-      const updated = await res.json();
-      setPhoto(updated.photo);
+    if (file) {
+      setPhotoFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setPhoto(reader.result);
+      reader.readAsDataURL(file);
     }
-  };
-
-  const handleLocationChange = async (e) => {
-    const loc = e.target.value;
-    setLocation(loc);
-
-    await fetch(`${API_BASE}/assets/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ location: loc }),
-    });
   };
 
   const handlePreview = (file) => {
@@ -76,9 +58,40 @@ export default function AssetPassport() {
 
   const closePreview = () => setPreviewUrl(null);
 
+  const handleSave = async () => {
+    // Збереження фото + місцезнаходження
+    const formData = new FormData();
+    if (photoFile) formData.append("photo", photoFile);
+    formData.append("location", location);
+
+    await fetch(`${API_BASE}/assets/${id}`, {
+      method: "PATCH",
+      body: formData
+    });
+
+    // Збереження всіх документів
+    for (const doc of documents) {
+      const docForm = new FormData();
+      docForm.append("number", doc.number);
+      docForm.append("date", doc.date);
+      if (doc.docFile) docForm.append("docFile", doc.docFile);
+      if (doc.scanFile) docForm.append("scanFile", doc.scanFile);
+
+      await fetch(`${API_BASE}/assets/${id}/documents`, {
+        method: "POST",
+        body: docForm
+      });
+    }
+
+    alert("✅ Дані збережено!");
+  };
+
   return (
     <>
-      <Link to="/" className="btn-back">← На головну</Link>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+        <Link to="/" className="btn-back">← На головну</Link>
+        <button className="add-document" onClick={handleSave}>💾 Зберегти всі зміни</button>
+      </div>
 
       <div className="passport-container">
         <div className="passport-left">
@@ -92,7 +105,7 @@ export default function AssetPassport() {
             type="text"
             placeholder="Введіть підрозділ"
             value={location}
-            onChange={handleLocationChange}
+            onChange={(e) => setLocation(e.target.value)}
           />
         </div>
 
