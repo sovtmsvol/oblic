@@ -8,9 +8,10 @@ export default function AssetPassport() {
   const [asset, setAsset] = useState(null);
   const [photo, setPhoto] = useState(null);
   const [photoFile, setPhotoFile] = useState(null);
-  const [documents, setDocuments] = useState([{ number: '', date: '', docFile: null, scanFile: null }]);
+  const [documents, setDocuments] = useState([]);
   const [location, setLocation] = useState('');
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
     fetch(`${API_BASE}/assets/${id}`)
@@ -19,24 +20,27 @@ export default function AssetPassport() {
         setAsset(data);
         setLocation(data.location || '');
         setPhoto(data.photo || null);
-        setDocuments(data.documents || [{ number: '', date: '', docFile: null, scanFile: null }]);
+        setDocuments(data.documents || []);
       });
   }, [id]);
 
   const handleDocumentChange = (index, field, value) => {
-    const newDocs = [...documents];
-    newDocs[index][field] = value;
-    setDocuments(newDocs);
+    const updated = [...documents];
+    updated[index][field] = value;
+    setDocuments(updated);
+    setHasChanges(true);
   };
 
   const addDocumentBlock = () => {
     setDocuments([...documents, { number: '', date: '', docFile: null, scanFile: null }]);
+    setHasChanges(true);
   };
 
   const removeDocumentBlock = (index) => {
     const updated = [...documents];
     updated.splice(index, 1);
     setDocuments(updated);
+    setHasChanges(true);
   };
 
   const handlePhotoChange = (e) => {
@@ -46,44 +50,52 @@ export default function AssetPassport() {
       const reader = new FileReader();
       reader.onloadend = () => setPhoto(reader.result);
       reader.readAsDataURL(file);
+      setHasChanges(true);
     }
   };
 
+  const handleLocationChange = (e) => {
+    setLocation(e.target.value);
+    setHasChanges(true);
+  };
+
   const handlePreview = (file) => {
-    if (file) {
-      const url = typeof file === "string" ? file : URL.createObjectURL(file);
-      setPreviewUrl(url);
-    }
+    const url = typeof file === "string" ? file : URL.createObjectURL(file);
+    setPreviewUrl(url);
   };
 
   const closePreview = () => setPreviewUrl(null);
 
   const handleSave = async () => {
-    // Збереження фото + місцезнаходження
-    const formData = new FormData();
-    if (photoFile) formData.append("photo", photoFile);
-    formData.append("location", location);
+    if (!hasChanges) {
+      alert("Немає змін для збереження.");
+      return;
+    }
 
-    await fetch(`${API_BASE}/assets/${id}`, {
+    const formData = new FormData();
+    formData.append("location", location);
+    if (photoFile) formData.append("photo", photoFile);
+    formData.append("documents", JSON.stringify(documents.map(d => ({
+      number: d.number,
+      date: d.date
+    }))));
+
+    documents.forEach((doc, i) => {
+      if (doc.docFile) formData.append(`docFile_${i}`, doc.docFile);
+      if (doc.scanFile) formData.append(`scanFile_${i}`, doc.scanFile);
+    });
+
+    const res = await fetch(`${API_BASE}/assets/${id}`, {
       method: "PATCH",
       body: formData
     });
 
-    // Збереження всіх документів
-    for (const doc of documents) {
-      const docForm = new FormData();
-      docForm.append("number", doc.number);
-      docForm.append("date", doc.date);
-      if (doc.docFile) docForm.append("docFile", doc.docFile);
-      if (doc.scanFile) docForm.append("scanFile", doc.scanFile);
-
-      await fetch(`${API_BASE}/assets/${id}/documents`, {
-        method: "POST",
-        body: docForm
-      });
+    if (res.ok) {
+      alert("✅ Дані успішно збережено!");
+      setHasChanges(false);
+    } else {
+      alert("❌ Помилка при збереженні.");
     }
-
-    alert("✅ Дані збережено!");
   };
 
   return (
@@ -105,7 +117,7 @@ export default function AssetPassport() {
             type="text"
             placeholder="Введіть підрозділ"
             value={location}
-            onChange={(e) => setLocation(e.target.value)}
+            onChange={handleLocationChange}
           />
         </div>
 
